@@ -1,0 +1,14 @@
+{
+  "endpoint": "http://127.0.0.1:26657",
+  "keystorePath": "/Users/tpkeeper/.stafihub",
+  "blockstorePath": "/Users/tpkeeper/gowork/stafi/staking-drop/blockstore",
+  "startBlock": 0,
+  "gasPrice": "0.0001ufis",
+  "account": "my-account",
+  "dropInfos": {
+    "uratom": {
+      "minBondAmount": "10",
+      "dropAmount": "50000"
+    }
+  }
+}
