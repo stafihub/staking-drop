@@ -80,7 +80,6 @@ func (l *Listener) pollBlocks() error {
 			}
 			// Sleep if the block we want comes after the most recently finalized block
 			if int64(willDealBlock)+BlockConfirmNumber > latestBlk {
-
 				time.Sleep(BlockRetryInterval)
 				continue
 			}

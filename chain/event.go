@@ -10,6 +10,7 @@ import (
 
 var (
 	ErrEventAttributeNumberUnMatch = errors.New("ErrEventAttributeNumberTooFew")
+	fisDenom                       = "ufis"
 )
 
 func (l *Listener) processBlockEvents(currentBlock int64) error {
@@ -57,11 +58,20 @@ func (l *Listener) processStringEvents(event types.StringEvent, blockNumber int6
 			l.log.Info(fmt.Sprintf("user %s liquidity bond, but denom %s not support drop, will skip", bonder.String(), denom))
 		} else {
 			if amount.GTE(dropInfo.MinBondAmount) {
-				txHash, err := l.conn.client.SingleTransferTo(bonder, types.NewCoins(types.NewCoin("ufis", dropInfo.DropAmount)))
+				balanceRes, err := l.conn.client.QueryBalance(bonder, fisDenom, 0)
 				if err != nil {
 					return err
 				}
-				l.log.Info(fmt.Sprintf("user %s liquidity bond amount: %s, denom: %s, drop amount: %sufis txHash: %s success", bonder.String(), amount.String(), denom, dropInfo.DropAmount, txHash))
+				if balanceRes.GetBalance().Amount.GT(types.ZeroInt()) {
+					l.log.Info(fmt.Sprintf("user %s stake amount: %s, denom: %s, but already have: %sufis, will skip", bonder.String(), amount.String(), denom, balanceRes.GetBalance().Amount.String()))
+				} else {
+					txHash, err := l.conn.client.SingleTransferTo(bonder, types.NewCoins(types.NewCoin(fisDenom, dropInfo.DropAmount)))
+					if err != nil {
+						return err
+					}
+					l.log.Info(fmt.Sprintf("user %s liquidity bond amount: %s, denom: %s, drop amount: %sufis txHash: %s success", bonder.String(), amount.String(), denom, dropInfo.DropAmount, txHash))
+				}
+
 			} else {
 				l.log.Info(fmt.Sprintf("user %s stake amount: %s, denom: %s, but less than minBondAmount %s, will skip", bonder.String(), amount.String(), denom, dropInfo.MinBondAmount))
 			}
