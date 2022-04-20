@@ -3,6 +3,8 @@ package chain
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/types"
 	stafiHubXLedgerTypes "github.com/stafihub/stafihub/x/ledger/types"
@@ -65,10 +67,42 @@ func (l *Listener) processStringEvents(event types.StringEvent, blockNumber int6
 				if balanceRes.GetBalance().Amount.GT(types.ZeroInt()) {
 					l.log.Info(fmt.Sprintf("user %s stake amount: %s, denom: %s, but already have: %sufis, will skip", bonder.String(), amount.String(), denom, balanceRes.GetBalance().Amount.String()))
 				} else {
-					txHash, err := l.conn.client.SingleTransferTo(bonder, types.NewCoins(types.NewCoin(fisDenom, dropInfo.DropAmount)))
-					if err != nil {
-						return err
+					retry := 0
+					var txHash string
+					for {
+						if retry >= BlockRetryLimit {
+							return fmt.Errorf("BroadcastBatchMsg reach retry limit: %s", err)
+						}
+						txHash, err = l.conn.client.SingleTransferTo(bonder, types.NewCoins(types.NewCoin(fisDenom, dropInfo.DropAmount)))
+						if err != nil {
+							if strings.Contains(strings.ToLower(err.Error()), "incorrect account sequence") {
+								l.log.Warn("BroadcastBatchMsg err will retry", "err", err)
+								time.Sleep(BlockRetryInterval)
+								retry++
+								continue
+							} else {
+								return err
+							}
+						}
+						break
 					}
+
+					retry = 0
+					var txRes *types.TxResponse
+					for {
+						if retry >= BlockRetryLimit {
+							return fmt.Errorf("QueryTxByHash reach retry limit: %s", err)
+						}
+						txRes, err = l.conn.client.QueryTxByHash(txHash)
+						if err != nil || txRes.Empty() || txRes.Height == 0 {
+							l.log.Warn("QueryTxByHash tx failed will retry query", "err", err, "txRes", txRes)
+							time.Sleep(BlockRetryInterval)
+							retry++
+							continue
+						}
+						break
+					}
+
 					l.log.Info(fmt.Sprintf("user %s liquidity bond amount: %s, denom: %s, drop amount: %sufis txHash: %s success", bonder.String(), amount.String(), denom, dropInfo.DropAmount, txHash))
 				}
 
