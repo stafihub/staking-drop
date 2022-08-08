@@ -59,7 +59,7 @@ func (c *Chain) Start() error {
 	return c.listener.start()
 }
 
-//stop will stop handler and listener
+// stop will stop handler and listener
 func (c *Chain) Stop() {
 	close(c.stop)
 }

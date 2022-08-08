@@ -10,8 +10,6 @@ import (
 	hubClient "github.com/stafihub/stafi-hub-relay-sdk/client"
 )
 
-
-
 type Connection struct {
 	client *hubClient.Client
 	log    log15.Logger
@@ -23,7 +21,7 @@ func NewConnection(cfgOption *ConfigOption, log log15.Logger) (*Connection, erro
 	if err != nil {
 		return nil, err
 	}
-	client, err := hubClient.NewClient(key, cfgOption.Account, cfgOption.GasPrice, cfgOption.Endpoint)
+	client, err := hubClient.NewClient(key, cfgOption.Account, cfgOption.GasPrice, []string{cfgOption.Endpoint})
 	if err != nil {
 		return nil, fmt.Errorf("hubClient.NewClient err: %s", err)
 	}
